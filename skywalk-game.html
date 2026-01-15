@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skywalk Learning Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .game-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+        }
+
+        .game-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+
+        .score-item {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .game-canvas {
+            padding: 30px;
+            min-height: 400px;
+        }
+
+        .character {
+            width: 60px;
+            height: 60px;
+            background: #667eea;
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            animation: bounce 0.5s ease infinite alternate;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        .platforms {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .platform {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .platform:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .platform.completed {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            opacity: 0.7;
+        }
+
+        .platform.active {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            animation: pulse 1s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .question-box {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .answers {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .answer-btn {
+            background: white;
+            border: 3px solid #667eea;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .answer-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .answer-btn.correct {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .answer-btn.wrong {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+
+        .answer-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .feedback {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+        }
+
+        .feedback.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+
+        .feedback.wrong {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+
+        .next-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .next-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .next-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .game-complete {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .game-complete.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        .game-complete h2 {
+            font-size: 36px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .game-complete p {
+            font-size: 20px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .restart-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>🎮 Skywalk Learning Game</h1>
+            <p>Trả lời đúng câu hỏi để tiến lên!</p>
+            <div class="score-board">
+                <div class="score-item">
+                    <span>Điểm: <span id="score">0</span></span>
+                </div>
+                <div class="score-item">
+                    <span>Câu hỏi: <span id="currentQuestion">1</span>/<span id="totalQuestions">10</span></span>
+                </div>
+                <div class="score-item">
+                    <span>Đúng: <span id="correctCount">0</span></span>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="game-canvas" id="gameCanvas">
+            <div class="character">🚶</div>
+            
+            <div class="question-box">
+                <div class="question-text" id="questionText"></div>
+                <div class="answers" id="answersContainer"></div>
+                <div class="feedback" id="feedback"></div>
+            </div>
+
+            <button class="next-btn" id="nextBtn" disabled>Tiếp theo →</button>
+        </div>
+
+        <div class="game-complete" id="gameComplete">
+            <h2>🎉 Chúc mừng!</h2>
+            <p>Bạn đã hoàn thành trò chơi!</p>
+            <p>Điểm số: <span id="finalScore"></span></p>
+            <p>Số câu đúng: <span id="finalCorrect"></span>/<span id="finalTotal"></span></p>
+            <button class="restart-btn" onclick="location.reload()">Chơi lại</button>
+        </div>
+    </div>
+
+    <script>
+        // Câu hỏi về Chủ nghĩa xã hội khoa học - Chương 1
+        const questions = [
+            {
+                question: "Câu 1: Theo nghĩa hẹp, Chủ nghĩa xã hội khoa học được hiểu là gì?",
+                answers: [
+                    { text: "A. Là sự chuyển biến tất yếu của xã hội loài người từ chủ nghĩa tư bản lên chủ nghĩa xã hội và chủ nghĩa cộng sản.", correct: false },
+                    { text: "B. Là một trong ba bộ phận hợp thành chủ nghĩa Mác - Lênin nghiên cứu sự chuyển biến tất yếu của xã hội loài người từ chủ nghĩa tư bản lên chủ nghĩa xã hội và chủ nghĩa cộng sản.", correct: true },
+                    { text: "C. Là một học thuyết kinh tế nghiên cứu về giá trị thặng dư.", correct: false },
+                    { text: "D. Là một trào lưu tư tưởng xuất hiện từ thời cổ đại.", correct: false }
+                ]
+            },
+            {
+                question: "Câu 2: Ai là người khẳng định: \"Chủ nghĩa Mác là người thừa kế chính đáng của tất cả những cái tốt đẹp nhất mà loài người đã tạo ra hồi thế kỷ XIX\"?",
+                answers: [
+                    { text: "A. C. Mác.", correct: false },
+                    { text: "B. Ph. Ăngghen.", correct: false },
+                    { text: "C. V.I. Lênin.", correct: true },
+                    { text: "D. Hồ Chí Minh.", correct: false }
+                ]
+            },
+            {
+                question: "Câu 3: Cuộc cách mạng công nghiệp phát triển vào những năm 40 của thế kỷ XIX đã tạo ra điều kiện kinh tế - xã hội gì cho sự ra đời của Chủ nghĩa xã hội khoa học?",
+                answers: [
+                    { text: "A. Làm xuất hiện một lực lượng sản xuất mới là nền đại công nghiệp và giai cấp công nhân hiện đại.", correct: true },
+                    { text: "B. Làm cho chế độ phong kiến trở nên vững mạnh hơn.", correct: false },
+                    { text: "C. Xoá bỏ hoàn toàn mâu thuẫn giữa tư sản và vô sản.", correct: false },
+                    { text: "D. Dẫn đến sự sụp đổ của nền kinh tế thị trường.", correct: false }
+                ]
+            },
+            {
+                question: "Câu 4: Phong trào Hiến chương của những người lao động diễn ra ở quốc gia nào vào những năm 1836 - 1848?",
+                answers: [
+                    { text: "A. Pháp.", correct: false },
+                    { text: "B. Đức.", correct: false },
+                    { text: "C. Anh.", correct: true },
+                    { text: "D. Mỹ.", correct: false }
+                ]
+            },
+            {
+                question: "Câu 5: Đâu là một trong ba phát minh vĩ đại của khoa học tự nhiên tạo tiền đề cho sự ra đời của chủ nghĩa duy vật biện chứng và chủ nghĩa duy vật lịch sử?",
+                answers: [
+                    { text: "A. Thuyết vạn vật hấp dẫn.", correct: false },
+                    { text: "B. Học thuyết Tiến hóa.", correct: true },
+                    { text: "C. Thuyết tương đối.", correct: false },
+                    { text: "D. Phát minh ra lửa.", correct: false }
+                ]
+            },
+            {
+                question: "Câu 6: Tiền đề tư tưởng - lý luận trực tiếp dẫn đến sự ra đời của Chủ nghĩa xã hội khoa học là gì?",
+                answers: [
+                    { text: "A. Triết học cổ điển Đức.", correct: false },
+                    { text: "B. Kinh tế chính trị học cổ điển Anh.", correct: false },
+                    { text: "C. Chủ nghĩa xã hội không tưởng - phê phán Pháp.", correct: true },
+                    { text: "D. Văn hóa Phục hưng.", correct: false }
+                ]
+            },
+            {
+                question: "Câu 7: Một trong những hạn chế lớn nhất của các nhà chủ nghĩa xã hội không tưởng là gì?",
+                answers: [
+                    { text: "A. Không phê phán chế độ quân chủ chuyên chế.", correct: false },
+                    { text: "B. Không đưa ra được quan điểm về xã hội tương lai.", correct: false },
+                    { text: "C. Không phát hiện ra quy luật vận động và phát triển của xã hội loài người nói chung và bản chất của chế độ làm thuê trong chủ nghĩa tư bản.", correct: true },
+                    { text: "D. Không ủng hộ giai cấp công nhân.", correct: false }
+                ]
+            },
+            {
+                question: "Câu 8: Ba phát kiến vĩ đại của C. Mác và Ph. Ăngghen bao gồm: Chủ nghĩa duy vật lịch sử, Học thuyết về giá trị thặng dư và...?",
+                answers: [
+                    { text: "A. Học thuyết về tôn giáo.", correct: false },
+                    { text: "B. Học thuyết về sứ mệnh lịch sử toàn thế giới của giai cấp công nhân.", correct: true },
+                    { text: "C. Học thuyết về liên minh công nông.", correct: false },
+                    { text: "D. Học thuyết về nhà nước pháp quyền.", correct: false }
+                ]
+            },
+            {
+                question: "Câu 9: Tác phẩm nào được xem là văn kiện có tính chất cương lĩnh, đánh dấu sự ra đời của Chủ nghĩa xã hội khoa học?",
+                answers: [
+                    { text: "A. Bộ \"Tư bản\".", correct: false },
+                    { text: "B. Tình cảnh giai cấp công nhân Anh.", correct: false },
+                    { text: "C. Tuyên ngôn của Đảng Cộng sản.", correct: true },
+                    { text: "D. Chống Đuyrinh.", correct: false }
+                ]
+            },
+            {
+                question: "Câu 10: Đối tượng nghiên cứu của Chủ nghĩa xã hội khoa học là gì?",
+                answers: [
+                    { text: "A. Những quy luật chung nhất của tự nhiên, xã hội và tư duy.", correct: false },
+                    { text: "B. Những quy luật kinh tế của quá trình sản xuất và trao đổi.", correct: false },
+                    { text: "C. Những quy luật, tính quy luật chính trị - xã hội của quá trình phát sinh, hình thành và phát triển của hình thái kinh tế - xã hội cộng sản chủ nghĩa.", correct: true },
+                    { text: "D. Lịch sử các cuộc chiến tranh nhân dân.", correct: false }
+                ]
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let correctCount = 0;
+        let answered = false;
+
+        // Khởi tạo game
+        function initGame() {
+            updateScoreBoard();
+            loadQuestion();
+        }
+
+        // Hiển thị câu hỏi
+        function loadQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                showGameComplete();
+                return;
+            }
+
+            answered = false;
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('feedback').classList.remove('show');
+            
+            const question = questions[currentQuestionIndex];
+            document.getElementById('questionText').textContent = question.question;
+            
+            const answersContainer = document.getElementById('answersContainer');
+            answersContainer.innerHTML = '';
+            
+            question.answers.forEach((answer, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.textContent = answer.text;
+                btn.onclick = () => checkAnswer(index);
+                answersContainer.appendChild(btn);
+            });
+
+            updateProgressBar();
+        }
+
+        // Kiểm tra câu trả lời
+        function checkAnswer(selectedIndex) {
+            if (answered) return;
+            answered = true;
+
+            const question = questions[currentQuestionIndex];
+            const answerBtns = document.querySelectorAll('.answer-btn');
+            const feedback = document.getElementById('feedback');
+            
+            answerBtns.forEach((btn, index) => {
+                btn.disabled = true;
+                if (question.answers[index].correct) {
+                    btn.classList.add('correct');
+                } else if (index === selectedIndex) {
+                    btn.classList.add('wrong');
+                }
+            });
+
+            if (question.answers[selectedIndex].correct) {
+                score += 10;
+                correctCount++;
+                feedback.textContent = '✅ Chính xác! Tuyệt vời!';
+                feedback.className = 'feedback correct show';
+                updateCharacter('🎉');
+            } else {
+                feedback.textContent = '❌ Sai rồi! Hãy thử lại lần sau.';
+                feedback.className = 'feedback wrong show';
+                updateCharacter('😢');
+            }
+
+            updateScoreBoard();
+            document.getElementById('nextBtn').disabled = false;
+        }
+
+        // Cập nhật nhân vật
+        function updateCharacter(emoji) {
+            const character = document.querySelector('.character');
+            character.textContent = emoji;
+            setTimeout(() => {
+                character.textContent = '🚶';
+            }, 1500);
+        }
+
+        // Cập nhật bảng điểm
+        function updateScoreBoard() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('currentQuestion').textContent = currentQuestionIndex + 1;
+            document.getElementById('totalQuestions').textContent = questions.length;
+            document.getElementById('correctCount').textContent = correctCount;
+        }
+
+        // Cập nhật thanh tiến trình
+        function updateProgressBar() {
+            const progress = ((currentQuestionIndex) / questions.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        // Câu hỏi tiếp theo
+        document.getElementById('nextBtn').onclick = function() {
+            currentQuestionIndex++;
+            loadQuestion();
+        };
+
+        // Hiển thị màn hình hoàn thành
+        function showGameComplete() {
+            document.getElementById('gameCanvas').style.display = 'none';
+            const gameComplete = document.getElementById('gameComplete');
+            gameComplete.classList.add('show');
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalCorrect').textContent = correctCount;
+            document.getElementById('finalTotal').textContent = questions.length;
+            document.getElementById('progressBar').style.width = '100%';
+        }
+
+        // Bắt đầu game
+        initGame();
+    </script>
+</body>
+</html>
