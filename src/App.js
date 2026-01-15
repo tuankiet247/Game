@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { questions } from './questions';
+import { getRandomQuestions } from './questions';
 
 function App() {
+  const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -12,8 +13,15 @@ function App() {
   const [character, setCharacter] = useState('🚶');
   const [gameComplete, setGameComplete] = useState(false);
 
+  // Khởi tạo câu hỏi random khi component mount
+  useEffect(() => {
+    const randomQuestions = getRandomQuestions(10);
+    console.log('Random questions loaded:', randomQuestions.length);
+    setQuestions(randomQuestions);
+  }, []);
+
   const currentQuestion = questions[currentQuestionIndex];
-  const progress = (currentQuestionIndex / questions.length) * 100;
+  const progress = questions.length > 0 ? (currentQuestionIndex / questions.length) * 100 : 0;
 
   const handleAnswerClick = (index) => {
     if (answered) return;
@@ -58,6 +66,9 @@ function App() {
   };
 
   const handleRestart = () => {
+    const randomQuestions = getRandomQuestions(10);
+    console.log('Restart - Random questions loaded:', randomQuestions.length);
+    setQuestions(randomQuestions);
     setCurrentQuestionIndex(0);
     setScore(0);
     setCorrectCount(0);
@@ -67,6 +78,17 @@ function App() {
     setCharacter('🚶');
     setGameComplete(false);
   };
+
+  if (questions.length === 0) {
+    return (
+      <div className="game-container">
+        <div className="game-header">
+          <h1>🎮 Skywalk Learning Game</h1>
+          <p>Đang tải câu hỏi...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="game-container">
